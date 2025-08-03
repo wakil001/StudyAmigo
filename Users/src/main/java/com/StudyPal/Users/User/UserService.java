@@ -8,7 +8,6 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
 
 @Service
 public class UserService {
@@ -25,32 +24,45 @@ public class UserService {
     }
 
     public User registerUser(RegisterationRequest user) {
-        user.setPassword(encoder.encode(user.getPassword()));
 
-        userDao.save();
-        return ;
+        User newUser = new User();
+
+        newUser.setEmail(user.getEmail());
+        newUser.setName(user.getName());
+        newUser.setPassword(encoder.encode(user.getPassword()));
+
+        return userDao.save(newUser);
+    }
+
+    public User updateUser(UserUpdateRequest request, int userId) throws ResourceNotFoundException {
+        return  userDao.findById(userId).map(existingUser ->{
+            existingUser.setName(request.getName());
+            existingUser.setEmail(request.email);
+            return userDao.save(existingUser);
+        }).orElseThrow(() -> new ResourceNotFoundException("User not found!"));
+
     }
 
     public String verify(User user) {
         try {
-            System.out.println("Attempting to authenticate user: " + user.getUsername());
+            System.out.println("Attempting to authenticate user: " + user.getName());
 
-            User existingUser = userDao.findByUsername(user.getUsername());
+            User existingUser = userDao.findByUsername(user.getName());
             if (existingUser == null) {
-                System.out.println("User not found: " + user.getUsername());
+                System.out.println("User not found: " + user.getName());
                 return "User not found";
             }
 
-            System.out.println("Found user: " + existingUser.getUsername());
+            System.out.println("Found user: " + existingUser.getName());
 
             Authentication authentication = authManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword())
+                    new UsernamePasswordAuthenticationToken(user.getName(), user.getPassword())
             );
 
             if (authentication.isAuthenticated()) {
-                return jwtService.generateToken(user.getUsername());
+                return jwtService.generateToken(user.getName());
             } else {
-                System.out.println("Authentication failed for user: " + user.getUsername());
+                System.out.println("Authentication failed for user: " + user.getName());
                 return "Authentication failed";
             }
         } catch (AuthenticationException e) {

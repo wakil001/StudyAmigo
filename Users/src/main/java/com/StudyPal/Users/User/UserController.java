@@ -21,7 +21,7 @@ public class UserController {
     }
     @PostMapping("/login")
     public String login(@RequestBody User user){
-        System.out.println("Login attempt for user: " + user.getUsername());
+        System.out.println("Login attempt for user: " + user.getName());
                 return userService.verify(user);
     }
 
